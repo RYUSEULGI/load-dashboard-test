@@ -7,7 +7,7 @@ import {
   LogEvent,
   startGenerator,
 } from "@/lib/eventGenerator";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 const LEVEL_CLASS: Record<string, string> = {
   ERROR: "lv-error",
