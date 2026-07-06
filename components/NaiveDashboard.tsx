@@ -7,7 +7,13 @@ import {
   LogEvent,
   startGenerator,
 } from "@/lib/eventGenerator";
-import { Fragment, useEffect, useRef, useState } from "react";
+import {
+  addBatchToLedger,
+  buildBars,
+  evictOldBuckets
+} from "@/lib/histogram";
+import { THistogram } from "@/types/dashboard.types";
+import { useEffect, useRef, useState } from "react";
 
 const LEVEL_CLASS: Record<string, string> = {
   ERROR: "lv-error",
@@ -26,34 +32,16 @@ function fmtTime(ts: number): string {
   );
 }
 
-/** 최근 60초 초당 발생 건수 (매 렌더마다 전체 로그를 다시 집계) */
-function buildHistogram(logs: LogEvent[]): { sec: number; count: number }[] {
-  const now = Math.floor(Date.now() / 1000);
-  const counts = new Map<number, number>();
-
-  for (const e of logs) {
-    const sec = Math.floor(e.timestamp / 1000);
-
-    if (now - sec < 60) {
-      counts.set(sec, (counts.get(sec) ?? 0) + 1);
-    }
-  }
-
-  const out: { sec: number; count: number }[] = [];
-
-  for (let s = now - 59; s <= now; s++) {
-    out.push({ sec: s, count: counts.get(s) ?? 0 });
-  }
-  return out;
-}
 
 export default function NaiveDashboard() {
   const generatorRef = useRef<Generator | null>(null);
   const waitingLineRef = useRef<LogEvent[]>([])
+  const ledgerRef = useRef(new Map<number, number>());
 
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [loadLevel, setLoadLevel] = useState<LoadLevel>("normal");
   const [running, setRunning] = useState(true);
+  const [histogram, setHistogram] = useState<THistogram[]>([]);
 
   useEffect(() => {
     const gen = startGenerator((e) => {
@@ -65,9 +53,14 @@ export default function NaiveDashboard() {
         return; 
       }
     
-      const batch = waitingLineRef.current; 
-      waitingLineRef.current = [];         
-    
+      const batch = waitingLineRef.current;
+      waitingLineRef.current = [];
+
+      const nowSec = Math.floor(Date.now() / 1000);
+      addBatchToLedger(ledgerRef.current, batch);
+      evictOldBuckets(ledgerRef.current, nowSec);
+      setHistogram(buildBars(ledgerRef.current, nowSec));
+
       setLogs((prev) => [...prev, ...batch]);
     }, 100);
 
@@ -86,7 +79,6 @@ export default function NaiveDashboard() {
   };
 
   const toggleRunning = () => {
-    // 비상 정지 (탭이 버벅일 때 탈출용)
     if (running) {
       generatorRef.current?.setRate(0);
     } else {
@@ -96,7 +88,6 @@ export default function NaiveDashboard() {
     setRunning(!running);
   };
 
-  const histogram = buildHistogram(logs);
   const maxCount = Math.max(100, ...histogram.map((h) => h.count));
   const newestFirst = [...logs].reverse();
 
