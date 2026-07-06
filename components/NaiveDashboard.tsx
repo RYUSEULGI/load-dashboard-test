@@ -49,18 +49,35 @@ function buildHistogram(logs: LogEvent[]): { sec: number; count: number }[] {
 
 export default function NaiveDashboard() {
   const generatorRef = useRef<Generator | null>(null);
+  const waitingLineRef = useRef<LogEvent[]>([])
 
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [loadLevel, setLoadLevel] = useState<LoadLevel>("normal");
   const [running, setRunning] = useState(true);
 
   useEffect(() => {
-    // 이벤트가 올 때마다 그대로 state 에 추가
     const gen = startGenerator((e) => {
-      setLogs((prev) => [...prev, e]);
+      waitingLineRef.current?.push(e);
     });
+
+    const intervalId = setInterval(() => {
+      if (waitingLineRef.current.length === 0) {
+        return; 
+      }
+    
+      const batch = waitingLineRef.current; 
+      waitingLineRef.current = [];         
+    
+      setLogs((prev) => [...prev, ...batch]);
+    }, 100);
+
     generatorRef.current = gen;
-    return () => gen.stop();
+
+    return () => {
+      clearInterval(intervalId);
+      waitingLineRef.current = [];
+      gen.stop();
+    }
   }, []);
 
   const changeLoad = (level: LoadLevel) => {
