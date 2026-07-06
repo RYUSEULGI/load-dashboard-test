@@ -14,8 +14,7 @@ import {
 } from "@/lib/histogram";
 import { THistogram } from "@/types/dashboard.types";
 import { useEffect, useRef, useState } from "react";
-import LogRow from "./LogRow";
-
+import LogStreamPanel from "./LogStreamPanel";
 
 export default function NaiveDashboard() {
   const generatorRef = useRef<Generator | null>(null);
@@ -73,7 +72,6 @@ export default function NaiveDashboard() {
   };
 
   const maxCount = Math.max(100, ...histogram.map((h) => h.count));
-  const newestFirst = [...logs].reverse();
 
   return (
     <main className="dashboard">
@@ -134,19 +132,7 @@ export default function NaiveDashboard() {
           </svg>
         </div>
 
-        <div className="panel">
-          <div className="panel-header">
-            <h2>실시간 로그 스트림</h2>
-            <span className="muted">
-              {logs.length.toLocaleString()}행 렌더 중
-            </span>
-          </div>
-          <div className="log-viewport" style={{ height: 420 }}>
-            {newestFirst.map((e) => (
-              <LogRow key={e.id} log={e} />
-            ))}
-          </div>
-        </div>
+        <LogStreamPanel logs={logs} />
       </div>
     </main>
   );

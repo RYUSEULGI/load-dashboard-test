@@ -18,9 +18,16 @@ function fmtTime(ts: number): string {
   );
 }
 
-const LogRow = memo(function LogRow({ log }: {log: LogEvent}) {
+const LogRow = memo(function LogRow({
+  log,
+  style,
+}: {
+  log: LogEvent;
+  /** react-window가 계산해 주는 행 위치/크기 (position: absolute 등) */
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="log-row-static">
+    <div className="log-row-static" style={style}>
       <span className="c-time">{fmtTime(log.timestamp)}</span>
       <span className={`c-level ${LEVEL_CLASS[log.level]}`}>{log.level}</span>
       <span className="c-service">{log.service}</span>
