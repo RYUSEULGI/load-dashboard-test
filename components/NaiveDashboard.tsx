@@ -14,23 +14,7 @@ import {
 } from "@/lib/histogram";
 import { THistogram } from "@/types/dashboard.types";
 import { useEffect, useRef, useState } from "react";
-
-const LEVEL_CLASS: Record<string, string> = {
-  ERROR: "lv-error",
-  WARN: "lv-warn",
-  INFO: "lv-info",
-  DEBUG: "lv-debug",
-};
-
-function fmtTime(ts: number): string {
-  const d = new Date(ts);
-
-  return (
-    d.toLocaleTimeString("en-GB", { hour12: false }) +
-    "." +
-    String(d.getMilliseconds()).padStart(3, "0")
-  );
-}
+import LogRow from "./LogRow";
 
 
 export default function NaiveDashboard() {
@@ -159,16 +143,7 @@ export default function NaiveDashboard() {
           </div>
           <div className="log-viewport" style={{ height: 420 }}>
             {newestFirst.map((e) => (
-              <div className="log-row-static" key={e.id}>
-                <span className="c-time">{fmtTime(e.timestamp)}</span>
-                <span className={`c-level ${LEVEL_CLASS[e.level]}`}>
-                  {e.level}
-                </span>
-                <span className="c-service">{e.service}</span>
-                <span className="c-status">{e.statusCode}</span>
-                <span className="c-latency">{e.latencyMs}ms</span>
-                <span className="c-msg">{e.message}</span>
-              </div>
+              <LogRow key={e.id} log={e} />
             ))}
           </div>
         </div>
